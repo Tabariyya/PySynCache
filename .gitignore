@@ -1,0 +1,22 @@
+.venv
+.idea
+.idea/*
+.env
+build
+*.so
+build*
+*.iws
+*.iml
+*.ipr
+.vscode/
+*.dll
+*.dylib
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
