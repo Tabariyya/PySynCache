@@ -1,7 +1,3 @@
-"""
-PySynCache - Python bindings for SynCache distributed caching system
-"""
-
 import sys
 
 try:

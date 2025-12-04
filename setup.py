@@ -1,24 +1,7 @@
-from setuptools import setup, Extension, find_packages
+from setuptools import setup, Extension
 import platform
 from pathlib import Path
-import sys
-import subprocess
-import os
-
-
-def get_pybind11_include():
-    """Get pybind11 include directory."""
-    # First try to import
-    try:
-        import pybind11
-        return pybind11.get_include()
-    except ImportError:
-        # During pip install, pybind11 should be available from build-system
-        # If not, provide a helpful error
-        raise RuntimeError(
-            "pybind11 is required to build this package. "
-            "Make sure it's installed in your build environment."
-        )
+import pybind11
 
 
 def get_extension():
@@ -56,29 +39,10 @@ def get_extension():
     lib_path = libs_dir / current_platform / current_arch
     library_file = lib_path / "SynCache.a"
 
-    # Check if library exists
-    if not library_file.exists():
-        # List available platforms for debugging
-        available = []
-        if libs_dir.exists():
-            for plat in libs_dir.iterdir():
-                if plat.is_dir():
-                    for arc in plat.iterdir():
-                        if arc.is_dir():
-                            lib = arc / "SynCache.a"
-                            if lib.exists():
-                                available.append(f"{plat.name}/{arc.name}")
-
-        raise RuntimeError(
-            f"Static library not found for platform {current_platform}/{current_arch}.\n"
-            f"Expected: {library_file}\n"
-            f"Available platforms: {', '.join(available) if available else 'None'}"
-        )
-
     print(f"Using static library: {library_file}")
 
-    # Get pybind11 include path
-    pybind11_include = get_pybind11_include()
+    pybind11_include = pybind11.get_include()
+    print(f"Using pybind11: {pybind11_include}")
 
     # Platform-specific compilation flags
     extra_compile_args = ["-std=c++17", "-O3"]
@@ -88,32 +52,18 @@ def get_extension():
 
     if current_platform == "windows":
         extra_compile_args += ["/EHsc", "/MD"]
-        # Windows might need different library name
-        if library_file.exists():
-            extra_objects = [str(library_file)]
-        else:
-            # Try with .lib extension
-            lib_file = lib_path / "SynCache.lib"
-            if lib_file.exists():
-                extra_objects = [str(lib_file)]
+        extra_objects = [str(library_file)]
 
-    elif current_platform == "macOS":
-        # Try to detect minimum macOS version
-        min_version = "11.0"  # Conservative default
-        extra_compile_args += [
-            f"-mmacosx-version-min={min_version}",
-            "-arch", "arm64" if arch == "arm64" else "x86_64"
-        ]
-        extra_link_args += [
-            f"-mmacosx-version-min={min_version}",
-            "-arch", "arm64" if arch == "arm64" else "x86_64"
-        ]
-
-    else:  # linux
+    elif current_platform == "linux":
         extra_compile_args += ["-fPIC", "-pthread"]
-        extra_link_args += ["-pthread", "-Wl,--no-undefined"]
+        extra_link_args += [
+            "-pthread",
+            "-Wl,--no-undefined",
+            "-static-libstdc++",
+            "-static-libgcc",
+        ]
 
-    extension = Extension(
+    return Extension(
         name="SynCache._core",
         sources=["src/bindings.cpp"],
         include_dirs=[
@@ -128,63 +78,20 @@ def get_extension():
         extra_link_args=extra_link_args,
     )
 
-    return extension
-
-
-# Create package directory
-Path("SynCache").mkdir(exist_ok=True)
-
-# Create/update __init__.py
-init_content = '''"""
-PySynCache - Python bindings for SynCache distributed caching system
-"""
-
-import sys
-
-try:
-    from ._core import Controller
-    __all__ = ["Controller"]
-except ImportError as e:
-    # Provide helpful error message for missing extension
-    print(f"Error loading C++ extension: {e}")
-    print("This package requires compilation. Make sure you have:")
-    print("1. A C++ compiler (g++, clang++, or MSVC)")
-    print("2. Python development headers")
-    print("3. pybind11 installed in build environment")
-    raise
-
-__version__ = "1.0.0"
-'''
-
-init_file = Path("SynCache/__init__.py")
-if not init_file.exists() or init_file.read_text() != init_content:
-    init_file.write_text(init_content)
-
-# Get extension
-try:
-    extension = get_extension()
-    ext_modules = [extension]
-except Exception as e:
-    print(f"Warning: Could not create extension: {e}")
-    print("This is expected when running setup.py for metadata extraction.")
-    print("The extension will be built during installation.")
-    ext_modules = []
 
 setup(
     name="pysyncache",
     version="1.0.4",
     packages=["SynCache"],
-    ext_modules=ext_modules,
+    ext_modules=[get_extension()],
     python_requires=">=3.8",
 
-    # Include all files needed for source build
     include_package_data=True,
     package_data={
         '': [
             'libs/**/*.a',
-            'libs/**/*.lib',
-            'include/**/*.h',
-            'src/**/*.cpp',
+            'include/synCache/Controller.h',
+            'src/bindings.cpp',
         ],
     },
 
