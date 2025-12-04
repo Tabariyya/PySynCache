@@ -41,7 +41,6 @@ class CMakeBuild(build_ext):
         system = platform.system()
 
         # CMake configure
-
         cmake_args = [
             f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}',
             f'-DPYTHON_EXECUTABLE={sys.executable}',
@@ -49,13 +48,16 @@ class CMakeBuild(build_ext):
             f'-DCMAKE_PREFIX_PATH={pybind11_cmake}',
         ]
 
+        # Windows-specific CMake args
+        if system == "Windows":
+            cmake_args += [
+                '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE={}'.format(extdir),
+                '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE={}'.format(extdir),
+                '-A', 'x64' if sys.maxsize > 2 ** 32 else 'Win32'
+            ]
+
         # Build args
         build_args = ['--config', 'Release']
-
-        if system == "Windows":
-            build_args += ['--', '/m']
-        else:
-            build_args += ['--', '-j2']
 
         try:
             subprocess.check_call(
@@ -80,17 +82,40 @@ class CMakeBuild(build_ext):
             print(f"CMake build failed with error: {e}")
             raise
 
-        # Rename output to match Python expectations
+        # Platform-specific file extension
+        system = platform.system()
+        if system == "Windows":
+            lib_ext = ".pyd"
+        else:
+            lib_ext = ".so"
+
+        # Look for the output file with correct extension
         output_file = None
         for f in os.listdir(extdir):
-            if f.startswith('PySynCache') and (f.endswith('.so') or f.endswith('.pyd')):
+            # Look for files starting with PySynCache and ending with the correct extension
+            if f.startswith('PySynCache') and f.endswith(lib_ext):
                 output_file = os.path.join(extdir, f)
                 break
 
+        # Also check for the target name directly
+        target_name = os.path.join(extdir, '_core' + lib_ext)
+
         if output_file and os.path.exists(output_file):
-            target_name = os.path.join(extdir, '_core' + os.path.splitext(output_file)[1])
+            # Rename to _core with correct extension
+            if os.path.exists(target_name):
+                os.remove(target_name)  # Remove existing _core file if it exists
+
             shutil.move(output_file, target_name)
-            print(f"Renamed {os.path.basename(output_file)} to _core{os.path.splitext(output_file)[1]}")
+            print(f"Renamed {os.path.basename(output_file)} to _core{lib_ext}")
+        else:
+            # Check if CMake already produced _core directly
+            for f in os.listdir(extdir):
+                if f.startswith('_core') and f.endswith(lib_ext):
+                    print(f"Found _core{lib_ext} directly from CMake build")
+                    break
+            else:
+                print(f"Warning: Could not find output file with extension {lib_ext} in {extdir}")
+                print(f"Files in directory: {os.listdir(extdir)}")
 
 
 setup(

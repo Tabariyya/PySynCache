@@ -13,7 +13,7 @@ description = "Python bindings for SynCache distributed caching system"
 readme = "README.md"
 requires-python = ">=3.7"
 authors = [
-    {name = "Waleed Shanaa", email = "waleed.shanaa@outlook.com"}
+    { name = "Waleed Shanaa", email = "waleed.shanaa@outlook.com" }
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -27,7 +27,8 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: C++",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: System :: Distributed Computing",

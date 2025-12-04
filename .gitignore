@@ -12,6 +12,7 @@ build*
 *.dll
 *.dylib
 dist
+pysyncache.egg-info
 ### STS ###
 .apt_generated
 .classpath
