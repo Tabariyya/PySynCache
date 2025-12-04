@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.15)
 project(PySynCache)
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if (WIN32)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif ()
 
 find_package(pybind11 REQUIRED)
 
@@ -31,9 +33,9 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     if(CMAKE_SYSTEM_PROCESSOR STREQUAL "ARM64")
-        set(LIB_PATH "${CMAKE_SOURCE_DIR}/libs/windows/arm64/SynCache.lib")
+        set(LIB_PATH "${CMAKE_SOURCE_DIR}/libs/windows/arm64/SynCache.a")
     else()
-        set(LIB_PATH "${CMAKE_SOURCE_DIR}/libs/windows/x64/SynCache.lib")
+        set(LIB_PATH "${CMAKE_SOURCE_DIR}/libs/windows/x64/SynCache.a")
     endif()
 endif()
 
@@ -51,3 +53,11 @@ if (UNIX AND NOT APPLE)
         -static-libgcc
     )
 endif()
+
+if (WIN32)
+    target_link_libraries(PySynCache PRIVATE
+            ws2_32.lib
+            crypt32.lib
+            advapi32.lib
+    )
+endif ()
