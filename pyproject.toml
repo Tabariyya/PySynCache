@@ -11,7 +11,7 @@ name = "pysyncache"
 version = "1.0.0"
 description = "Python bindings for SynCache distributed caching system"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.7"
 authors = [
     {name = "Waleed Shanaa", email = "waleed.shanaa@outlook.com"}
 ]

@@ -3,6 +3,7 @@ include README.md
 include pyproject.toml
 include setup.py
 include MANIFEST.in
+include CMakeLists.txt
 
 # Include Python package
 include SynCache/__init__.py
@@ -12,7 +13,6 @@ include src/bindings.cpp
 
 # Recursively include ALL static libraries for ALL platforms
 recursive-include libs *.a
-recursive-include libs *.lib
 
 # Recursively include ALL headers
 recursive-include include *.h

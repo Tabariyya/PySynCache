@@ -1,107 +1,114 @@
 from setuptools import setup, Extension
-import platform
+from setuptools.command.build_ext import build_ext
+import subprocess
+import os
+import sys
 from pathlib import Path
 import pybind11
+import platform
+import shutil
+
+class CMakeExtension(Extension):
+    def __init__(self, name, sourcedir=''):
+        Extension.__init__(self, name, sources=[])
+        self.sourcedir = os.path.abspath(sourcedir)
 
 
-def get_extension():
-    """Create extension for the current platform."""
+class CMakeBuild(build_ext):
+    def run(self):
 
-    # Get current platform
-    system = platform.system().lower()
-    arch = platform.machine().lower()
+        for ext in self.extensions:
+            self.build_cmake(ext)
 
-    print(f"Building for platform: {system}/{arch}")
+    def build_cmake(self, ext):
+        # Ensure we have cmake
+        try:
+            subprocess.check_output(['cmake', '--version'])
+        except OSError:
+            raise RuntimeError("CMake must be installed to build this extension")
 
-    platform_map = {
-        'linux': 'linux',
-        'darwin': 'macOS',  # Your directory uses capital S
-        'windows': 'windows'
-    }
+        extdir = os.path.abspath(
+            os.path.dirname(self.get_ext_fullpath(ext.name))
+        )
 
-    arch_map = {
-        'x86_64': 'x64',
-        'amd64': 'x64',
-        'arm64': 'arm64',
-        'aarch64': 'arm64'
-    }
+        # Build directory
+        build_temp = os.path.join(self.build_temp, ext.name)
+        if not os.path.exists(build_temp):
+            os.makedirs(build_temp)
 
-    current_platform = platform_map.get(system)
-    current_arch = arch_map.get(arch)
+        pybind11_cmake = os.path.join(os.path.dirname(pybind11.__file__), 'share', 'cmake', 'pybind11')
 
-    if not current_platform:
-        raise RuntimeError(f"Unsupported platform: {system}")
-    if not current_arch:
-        raise RuntimeError(f"Unsupported architecture: {arch}")
+        system = platform.system()
 
-    # Path to pre-built static library
-    libs_dir = Path("libs")
-    lib_path = libs_dir / current_platform / current_arch
-    library_file = lib_path / "SynCache.a"
+        # CMake configure
 
-    print(f"Using static library: {library_file}")
-
-    pybind11_include = pybind11.get_include()
-    print(f"Using pybind11: {pybind11_include}")
-
-    # Platform-specific compilation flags
-    extra_compile_args = ["-std=c++17", "-O3"]
-    extra_link_args = []
-    extra_objects = [str(library_file)]
-    libraries = []
-
-    if current_platform == "windows":
-        extra_compile_args += ["/EHsc", "/MD"]
-        extra_objects = [str(library_file)]
-
-    elif current_platform == "linux":
-        extra_compile_args += ["-fPIC", "-pthread"]
-        extra_link_args += [
-            "-pthread",
-            "-Wl,--no-undefined",
-            "-static-libstdc++",
-            "-static-libgcc",
+        cmake_args = [
+            f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}',
+            f'-DPYTHON_EXECUTABLE={sys.executable}',
+            f'-DCMAKE_BUILD_TYPE=Release',
+            f'-DCMAKE_PREFIX_PATH={pybind11_cmake}',
         ]
 
-    return Extension(
-        name="SynCache._core",
-        sources=["src/bindings.cpp"],
-        include_dirs=[
-            "include",
-            pybind11_include,
-        ],
-        library_dirs=[str(lib_path)],
-        libraries=libraries,
-        extra_objects=extra_objects,
-        language="c++",
-        extra_compile_args=extra_compile_args,
-        extra_link_args=extra_link_args,
-    )
+        # Build args
+        build_args = ['--config', 'Release']
+
+        if system == "Windows":
+            build_args += ['--', '/m']
+        else:
+            build_args += ['--', '-j2']
+
+        try:
+            subprocess.check_call(
+                ['cmake', ext.sourcedir] + cmake_args,
+                cwd=build_temp,
+                stdout=sys.stdout,
+                stderr=sys.stderr
+            )
+        except subprocess.CalledProcessError as e:
+            print(f"CMake configure failed with error: {e}")
+            raise
+
+        # Build
+        try:
+            subprocess.check_call(
+                ['cmake', '--build', '.'] + build_args,
+                cwd=build_temp,
+                stdout=sys.stdout,
+                stderr=sys.stderr
+            )
+        except subprocess.CalledProcessError as e:
+            print(f"CMake build failed with error: {e}")
+            raise
+
+        # Rename output to match Python expectations
+        output_file = None
+        for f in os.listdir(extdir):
+            if f.startswith('PySynCache') and (f.endswith('.so') or f.endswith('.pyd')):
+                output_file = os.path.join(extdir, f)
+                break
+
+        if output_file and os.path.exists(output_file):
+            target_name = os.path.join(extdir, '_core' + os.path.splitext(output_file)[1])
+            shutil.move(output_file, target_name)
+            print(f"Renamed {os.path.basename(output_file)} to _core{os.path.splitext(output_file)[1]}")
 
 
 setup(
     name="pysyncache",
     version="1.0.4",
     packages=["SynCache"],
-    ext_modules=[get_extension()],
-    python_requires=">=3.8",
+    ext_modules=[CMakeExtension('SynCache._core')],
+    cmdclass={'build_ext': CMakeBuild},
+    python_requires=">=3.7",
+    zip_safe=False,
 
-    include_package_data=True,
-    package_data={
-        '': [
-            'libs/**/*.a',
-            'include/synCache/Controller.h',
-            'src/bindings.cpp',
-        ],
-    },
+    setup_requires=["pybind11>=2.6"],
 
-    # Metadata
     author="Waleed Shanaa",
-    author_email="your.email@example.com",
-    description="Python bindings for SynCache distributed caching system",
+    author_email="waleed.shanaa@outlook.com",
+    description="Python bindings for SynCache",
     long_description=open("README.md").read() if Path("README.md").exists() else "",
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/pysyncache",
     license="MIT",
 
     classifiers=[
@@ -117,15 +124,10 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
         "Programming Language :: C++",
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Topic :: System :: Distributed Computing",
-    ],
-
-    keywords=["cache", "distributed", "caching", "synapse", "performance"],
-
-    # Helpful for users who have build issues
-    setup_requires=[
-        "pybind11>=2.6",
     ],
 )
