@@ -5,3 +5,38 @@ requires = [
     "pybind11>=2.6",
 ]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "pysyncache"
+version = "1.0.0"
+description = "Python bindings for SynCache distributed caching system"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [
+    {name = "Waleed Shanaa", email = "waleed.shanaa@outlook.com"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: C++",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Distributed Computing",
+]
+dependencies = []
+keywords = ["cache", "distributed", "caching", "synapse", "performance"]
+
+[project.urls]
+Homepage = "https://github.com/synCache-org/PySynCache"
+Repository = "https://github.com/synCache-org/PySynCache"
+Documentation = "https://github.com/synCache-org/PySynCache#readme"
+Issues = "https://github.com/synCache-org/PySynCache/issues"

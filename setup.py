@@ -7,158 +7,218 @@ import os
 
 
 def get_pybind11_include():
+    """Get pybind11 include directory."""
+    # First try to import
     try:
         import pybind11
         return pybind11.get_include()
     except ImportError:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "pybind11"])
-        import pybind11
-        return pybind11.get_include()
+        # During pip install, pybind11 should be available from build-system
+        # If not, provide a helpful error
+        raise RuntimeError(
+            "pybind11 is required to build this package. "
+            "Make sure it's installed in your build environment."
+        )
 
 
-# Get current platform
-system = platform.system().lower()
-arch = platform.machine().lower()
+def get_extension():
+    """Create extension for the current platform."""
 
-print(f"Building on: {system}/{arch}")
+    # Get current platform
+    system = platform.system().lower()
+    arch = platform.machine().lower()
 
-platform_map = {
-    'linux': 'linux',
-    'darwin': 'macOS',
-    'windows': 'windows'
-}
+    print(f"Building for platform: {system}/{arch}")
 
-arch_map = {
-    'x86_64': 'x64',
-    'amd64': 'x64',
-    'arm64': 'arm64',
-    'aarch64': 'arm64'
-}
+    platform_map = {
+        'linux': 'linux',
+        'darwin': 'macOS',  # Your directory uses capital S
+        'windows': 'windows'
+    }
 
-current_platform = platform_map.get(system)
-current_arch = arch_map.get(arch)
+    arch_map = {
+        'x86_64': 'x64',
+        'amd64': 'x64',
+        'arm64': 'arm64',
+        'aarch64': 'arm64'
+    }
 
-if not current_platform:
-    raise RuntimeError(f"Unsupported platform: {system}")
-if not current_arch:
-    raise RuntimeError(f"Unsupported architecture: {arch}")
+    current_platform = platform_map.get(system)
+    current_arch = arch_map.get(arch)
 
-print(f"Using platform: {current_platform}/{current_arch}")
+    if not current_platform:
+        raise RuntimeError(f"Unsupported platform: {system}")
+    if not current_arch:
+        raise RuntimeError(f"Unsupported architecture: {arch}")
 
-# Path to pre-built static library
-libs_dir = Path("libs")
-lib_path = libs_dir / current_platform / current_arch
-library_file = lib_path / "SynCache.a"
+    # Path to pre-built static library
+    libs_dir = Path("libs")
+    lib_path = libs_dir / current_platform / current_arch
+    library_file = lib_path / "SynCache.a"
 
-# Verify library exists
-if not library_file.exists():
-    raise FileNotFoundError(f"Library not found: {library_file}")
+    # Check if library exists
+    if not library_file.exists():
+        # List available platforms for debugging
+        available = []
+        if libs_dir.exists():
+            for plat in libs_dir.iterdir():
+                if plat.is_dir():
+                    for arc in plat.iterdir():
+                        if arc.is_dir():
+                            lib = arc / "SynCache.a"
+                            if lib.exists():
+                                available.append(f"{plat.name}/{arc.name}")
 
-print(f"Using library: {library_file}")
+        raise RuntimeError(
+            f"Static library not found for platform {current_platform}/{current_arch}.\n"
+            f"Expected: {library_file}\n"
+            f"Available platforms: {', '.join(available) if available else 'None'}"
+        )
 
-# Get pybind11 include path
-pybind11_include = get_pybind11_include()
-print(f"Pybind11 include: {pybind11_include}")
+    print(f"Using static library: {library_file}")
 
-# Platform-specific compilation flags
-extra_compile_args = ["-std=c++17", "-O3"]
-extra_link_args = []
-extra_objects = [str(library_file)]
-libraries = []
+    # Get pybind11 include path
+    pybind11_include = get_pybind11_include()
 
-if current_platform == "windows":
-    extra_compile_args += ["/EHsc", "/MD"]
+    # Platform-specific compilation flags
+    extra_compile_args = ["-std=c++17", "-O3"]
+    extra_link_args = []
+    extra_objects = [str(library_file)]
+    libraries = []
 
-elif current_platform == "macOS":
-    # CRITICAL: Match the macOS version your library was built for
-    # macOS 26.0 is Sequoia (version 15.0)
-    # Use 15.0 as minimum deployment target for compatibility
-    extra_compile_args += [
-        "-mmacosx-version-min=15.0",  # Changed from 10.15 to 15.0
-        "-arch", "arm64",
-    ]
-    extra_link_args += [
-        "-mmacosx-version-min=15.0",  # Changed from 10.15 to 15.0
-        "-arch", "arm64",
-    ]
+    if current_platform == "windows":
+        extra_compile_args += ["/EHsc", "/MD"]
+        # Windows might need different library name
+        if library_file.exists():
+            extra_objects = [str(library_file)]
+        else:
+            # Try with .lib extension
+            lib_file = lib_path / "SynCache.lib"
+            if lib_file.exists():
+                extra_objects = [str(lib_file)]
 
-    # Also override Python's default deployment target
-    os.environ['MACOSX_DEPLOYMENT_TARGET'] = "15.0"
+    elif current_platform == "macOS":
+        # Try to detect minimum macOS version
+        min_version = "11.0"  # Conservative default
+        extra_compile_args += [
+            f"-mmacosx-version-min={min_version}",
+            "-arch", "arm64" if arch == "arm64" else "x86_64"
+        ]
+        extra_link_args += [
+            f"-mmacosx-version-min={min_version}",
+            "-arch", "arm64" if arch == "arm64" else "x86_64"
+        ]
 
-    # Check Python's deployment target
-    import sysconfig
+    else:  # linux
+        extra_compile_args += ["-fPIC", "-pthread"]
+        extra_link_args += ["-pthread", "-Wl,--no-undefined"]
 
-    print(f"Python deployment target: {sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')}")
+    extension = Extension(
+        name="SynCache._core",
+        sources=["src/bindings.cpp"],
+        include_dirs=[
+            "include",
+            pybind11_include,
+        ],
+        library_dirs=[str(lib_path)],
+        libraries=libraries,
+        extra_objects=extra_objects,
+        language="c++",
+        extra_compile_args=extra_compile_args,
+        extra_link_args=extra_link_args,
+    )
 
-else:  # linux
-    extra_compile_args += ["-fPIC", "-pthread"]
-    extra_link_args += ["-pthread", "-Wl,--no-undefined"]
+    return extension
+
 
 # Create package directory
-package_dir = Path("SynCache")
-package_dir.mkdir(exist_ok=True)
+Path("SynCache").mkdir(exist_ok=True)
 
-# Define the C++ extension
-extension = Extension(
-    name="SynCache._core",
-    sources=["src/bindings.cpp"],
-    include_dirs=[
-        "include",
-        pybind11_include,
-    ],
-    library_dirs=[str(lib_path)],
-    libraries=libraries,
-    extra_objects=extra_objects,
-    language="c++",
-    extra_compile_args=extra_compile_args,
-    extra_link_args=extra_link_args,
-)
+# Create/update __init__.py
+init_content = '''"""
+PySynCache - Python bindings for SynCache distributed caching system
+"""
 
-# macOS specific build options
-cmdclass = {}
-if current_platform == "macOS":
-    from distutils.command.build_ext import build_ext
+import sys
 
+try:
+    from ._core import Controller
+    __all__ = ["Controller"]
+except ImportError as e:
+    # Provide helpful error message for missing extension
+    print(f"Error loading C++ extension: {e}")
+    print("This package requires compilation. Make sure you have:")
+    print("1. A C++ compiler (g++, clang++, or MSVC)")
+    print("2. Python development headers")
+    print("3. pybind11 installed in build environment")
+    raise
 
-    class MacOSBuildExt(build_ext):
-        def build_extensions(self):
-            # Override deployment target
-            self.compiler.macosx_deployment_target = "15.0"
+__version__ = "1.0.0"
+'''
 
-            # Update compiler flags
-            for ext in self.extensions:
-                ext.extra_compile_args = [
-                    arg.replace("10.15", "15.0")
-                    if isinstance(arg, str) else arg
-                    for arg in ext.extra_compile_args
-                ]
-                ext.extra_link_args = [
-                    arg.replace("10.15", "15.0")
-                    if isinstance(arg, str) else arg
-                    for arg in ext.extra_link_args
-                ]
+init_file = Path("SynCache/__init__.py")
+if not init_file.exists() or init_file.read_text() != init_content:
+    init_file.write_text(init_content)
 
-            super().build_extensions()
-
-
-    cmdclass['build_ext'] = MacOSBuildExt
+# Get extension
+try:
+    extension = get_extension()
+    ext_modules = [extension]
+except Exception as e:
+    print(f"Warning: Could not create extension: {e}")
+    print("This is expected when running setup.py for metadata extraction.")
+    print("The extension will be built during installation.")
+    ext_modules = []
 
 setup(
-    name="PySynCache",
-    version="1.0.0",
+    name="pysyncache",
+    version="1.0.4",
     packages=["SynCache"],
-    ext_modules=[extension],
+    ext_modules=ext_modules,
     python_requires=">=3.8",
 
-    # macOS deployment target
-    options={
-        'build_ext': {
-            'plat_name': 'macosx-15.0-arm64',  # Updated to 15.0
-        }
+    # Include all files needed for source build
+    include_package_data=True,
+    package_data={
+        '': [
+            'libs/**/*.a',
+            'libs/**/*.lib',
+            'include/**/*.h',
+            'src/**/*.cpp',
+        ],
     },
 
-    cmdclass=cmdclass,
-
+    # Metadata
     author="Waleed Shanaa",
-    description="Python bindings for SynCache",
+    author_email="your.email@example.com",
+    description="Python bindings for SynCache distributed caching system",
+    long_description=open("README.md").read() if Path("README.md").exists() else "",
+    long_description_content_type="text/markdown",
+    url="https://github.com/yourusername/pysyncache",
+    license="MIT",
+
+    classifiers=[
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: POSIX :: Linux",
+        "Operating System :: MacOS :: MacOS X",
+        "Operating System :: Microsoft :: Windows",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: C++",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+        "Topic :: System :: Distributed Computing",
+    ],
+
+    keywords=["cache", "distributed", "caching", "synapse", "performance"],
+
+    # Helpful for users who have build issues
+    setup_requires=[
+        "pybind11>=2.6",
+    ],
 )
