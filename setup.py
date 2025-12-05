@@ -120,7 +120,7 @@ class CMakeBuild(build_ext):
 
 setup(
     name="pysyncache",
-    version="1.0.4",
+    version="1.0.0",
     packages=["SynCache"],
     ext_modules=[CMakeExtension('SynCache._core')],
     cmdclass={'build_ext': CMakeBuild},
