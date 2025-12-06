@@ -1,164 +1,158 @@
-from setuptools import setup, Extension, find_packages
-import platform
-from pathlib import Path
-import sys
+from setuptools import setup, Extension
+from setuptools.command.build_ext import build_ext
 import subprocess
 import os
+import sys
+from pathlib import Path
+import pybind11
+import platform
+import shutil
+
+class CMakeExtension(Extension):
+    def __init__(self, name, sourcedir=''):
+        Extension.__init__(self, name, sources=[])
+        self.sourcedir = os.path.abspath(sourcedir)
 
 
-def get_pybind11_include():
-    try:
-        import pybind11
-        return pybind11.get_include()
-    except ImportError:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "pybind11"])
-        import pybind11
-        return pybind11.get_include()
+class CMakeBuild(build_ext):
+    def run(self):
 
+        for ext in self.extensions:
+            self.build_cmake(ext)
 
-# Get current platform
-system = platform.system().lower()
-arch = platform.machine().lower()
+    def build_cmake(self, ext):
+        # Ensure we have cmake
+        try:
+            subprocess.check_output(['cmake', '--version'])
+        except OSError:
+            raise RuntimeError("CMake must be installed to build this extension")
 
-print(f"Building on: {system}/{arch}")
+        extdir = os.path.abspath(
+            os.path.dirname(self.get_ext_fullpath(ext.name))
+        )
 
-platform_map = {
-    'linux': 'linux',
-    'darwin': 'macOS',
-    'windows': 'windows'
-}
+        # Build directory
+        build_temp = os.path.join(self.build_temp, ext.name)
+        if not os.path.exists(build_temp):
+            os.makedirs(build_temp)
 
-arch_map = {
-    'x86_64': 'x64',
-    'amd64': 'x64',
-    'arm64': 'arm64',
-    'aarch64': 'arm64'
-}
+        pybind11_cmake = os.path.join(os.path.dirname(pybind11.__file__), 'share', 'cmake', 'pybind11')
 
-current_platform = platform_map.get(system)
-current_arch = arch_map.get(arch)
+        system = platform.system()
 
-if not current_platform:
-    raise RuntimeError(f"Unsupported platform: {system}")
-if not current_arch:
-    raise RuntimeError(f"Unsupported architecture: {arch}")
+        # CMake configure
+        cmake_args = [
+            f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}',
+            f'-DPYTHON_EXECUTABLE={sys.executable}',
+            f'-DCMAKE_BUILD_TYPE=Release',
+            f'-DCMAKE_PREFIX_PATH={pybind11_cmake}',
+        ]
 
-print(f"Using platform: {current_platform}/{current_arch}")
+        # Windows-specific CMake args
+        if system == "Windows":
+            cmake_args += [
+                '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE={}'.format(extdir),
+                '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE={}'.format(extdir),
+                '-A', 'x64' if sys.maxsize > 2 ** 32 else 'Win32'
+            ]
 
-# Path to pre-built static library
-libs_dir = Path("libs")
-lib_path = libs_dir / current_platform / current_arch
-library_file = lib_path / "SynCache.a"
+        # Build args
+        build_args = ['--config', 'Release']
 
-# Verify library exists
-if not library_file.exists():
-    raise FileNotFoundError(f"Library not found: {library_file}")
+        try:
+            subprocess.check_call(
+                ['cmake', ext.sourcedir] + cmake_args,
+                cwd=build_temp,
+                stdout=sys.stdout,
+                stderr=sys.stderr
+            )
+        except subprocess.CalledProcessError as e:
+            print(f"CMake configure failed with error: {e}")
+            raise
 
-print(f"Using library: {library_file}")
+        # Build
+        try:
+            subprocess.check_call(
+                ['cmake', '--build', '.'] + build_args,
+                cwd=build_temp,
+                stdout=sys.stdout,
+                stderr=sys.stderr
+            )
+        except subprocess.CalledProcessError as e:
+            print(f"CMake build failed with error: {e}")
+            raise
 
-# Get pybind11 include path
-pybind11_include = get_pybind11_include()
-print(f"Pybind11 include: {pybind11_include}")
+        # Platform-specific file extension
+        system = platform.system()
+        if system == "Windows":
+            lib_ext = ".pyd"
+        else:
+            lib_ext = ".so"
 
-# Platform-specific compilation flags
-extra_compile_args = ["-std=c++17", "-O3"]
-extra_link_args = []
-extra_objects = [str(library_file)]
-libraries = []
+        # Look for the output file with correct extension
+        output_file = None
+        for f in os.listdir(extdir):
+            # Look for files starting with PySynCache and ending with the correct extension
+            if f.startswith('PySynCache') and f.endswith(lib_ext):
+                output_file = os.path.join(extdir, f)
+                break
 
-if current_platform == "windows":
-    extra_compile_args += ["/EHsc", "/MD"]
+        # Also check for the target name directly
+        target_name = os.path.join(extdir, '_core' + lib_ext)
 
-elif current_platform == "macOS":
-    # CRITICAL: Match the macOS version your library was built for
-    # macOS 26.0 is Sequoia (version 15.0)
-    # Use 15.0 as minimum deployment target for compatibility
-    extra_compile_args += [
-        "-mmacosx-version-min=15.0",  # Changed from 10.15 to 15.0
-        "-arch", "arm64",
-    ]
-    extra_link_args += [
-        "-mmacosx-version-min=15.0",  # Changed from 10.15 to 15.0
-        "-arch", "arm64",
-    ]
+        if output_file and os.path.exists(output_file):
+            # Rename to _core with correct extension
+            if os.path.exists(target_name):
+                os.remove(target_name)  # Remove existing _core file if it exists
 
-    # Also override Python's default deployment target
-    os.environ['MACOSX_DEPLOYMENT_TARGET'] = "15.0"
+            shutil.move(output_file, target_name)
+            print(f"Renamed {os.path.basename(output_file)} to _core{lib_ext}")
+        else:
+            # Check if CMake already produced _core directly
+            for f in os.listdir(extdir):
+                if f.startswith('_core') and f.endswith(lib_ext):
+                    print(f"Found _core{lib_ext} directly from CMake build")
+                    break
+            else:
+                print(f"Warning: Could not find output file with extension {lib_ext} in {extdir}")
+                print(f"Files in directory: {os.listdir(extdir)}")
 
-    # Check Python's deployment target
-    import sysconfig
-
-    print(f"Python deployment target: {sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')}")
-
-else:  # linux
-    extra_compile_args += ["-fPIC", "-pthread"]
-    extra_link_args += ["-pthread", "-Wl,--no-undefined"]
-
-# Create package directory
-package_dir = Path("SynCache")
-package_dir.mkdir(exist_ok=True)
-
-# Define the C++ extension
-extension = Extension(
-    name="SynCache._core",
-    sources=["src/bindings.cpp"],
-    include_dirs=[
-        "include",
-        pybind11_include,
-    ],
-    library_dirs=[str(lib_path)],
-    libraries=libraries,
-    extra_objects=extra_objects,
-    language="c++",
-    extra_compile_args=extra_compile_args,
-    extra_link_args=extra_link_args,
-)
-
-# macOS specific build options
-cmdclass = {}
-if current_platform == "macOS":
-    from distutils.command.build_ext import build_ext
-
-
-    class MacOSBuildExt(build_ext):
-        def build_extensions(self):
-            # Override deployment target
-            self.compiler.macosx_deployment_target = "15.0"
-
-            # Update compiler flags
-            for ext in self.extensions:
-                ext.extra_compile_args = [
-                    arg.replace("10.15", "15.0")
-                    if isinstance(arg, str) else arg
-                    for arg in ext.extra_compile_args
-                ]
-                ext.extra_link_args = [
-                    arg.replace("10.15", "15.0")
-                    if isinstance(arg, str) else arg
-                    for arg in ext.extra_link_args
-                ]
-
-            super().build_extensions()
-
-
-    cmdclass['build_ext'] = MacOSBuildExt
 
 setup(
-    name="PySynCache",
+    name="pysyncache",
     version="1.0.0",
     packages=["SynCache"],
-    ext_modules=[extension],
-    python_requires=">=3.8",
+    ext_modules=[CMakeExtension('SynCache._core')],
+    cmdclass={'build_ext': CMakeBuild},
+    python_requires=">=3.7",
+    zip_safe=False,
 
-    # macOS deployment target
-    options={
-        'build_ext': {
-            'plat_name': 'macosx-15.0-arm64',  # Updated to 15.0
-        }
-    },
-
-    cmdclass=cmdclass,
+    setup_requires=["pybind11>=2.6"],
 
     author="Waleed Shanaa",
+    author_email="waleed.shanaa@outlook.com",
     description="Python bindings for SynCache",
+    long_description=open("README.md").read() if Path("README.md").exists() else "",
+    long_description_content_type="text/markdown",
+    license="MIT",
+
+    classifiers=[
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: POSIX :: Linux",
+        "Operating System :: MacOS :: MacOS X",
+        "Operating System :: Microsoft :: Windows",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
+        "Programming Language :: C++",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+        "Topic :: System :: Distributed Computing",
+    ], install_requires=['jsons']
 )
