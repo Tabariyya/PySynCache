@@ -1,0 +1,19 @@
+# Include all files needed for source build
+include README.md
+include pyproject.toml
+include setup.py
+include MANIFEST.in
+include CMakeLists.txt
+
+# Include Python package
+include SynCache/__init__.py
+
+# Include C++ source
+include src/bindings.cpp
+
+# Recursively include ALL static libraries for ALL platforms
+recursive-include libs *.a
+
+# Recursively include ALL headers
+recursive-include include *.h
+recursive-include include *.hpp
