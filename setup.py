@@ -154,5 +154,5 @@ setup(
         "Programming Language :: C++",
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Topic :: System :: Distributed Computing",
-    ],
+    ], install_requires=['jsons']
 )
