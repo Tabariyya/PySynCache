@@ -19,7 +19,7 @@ PYBIND11_MODULE(_core, m) {
                              const std::string& ns,
                              const std::string& id,
                              const py::bytes& val,
-                             const std::optional<std::time_t>& ttl) {
+                             const std::optional<long>& ttl) {
             // Extract bytes to vector<uint8_t>
             char* buffer;
             py::ssize_t length;

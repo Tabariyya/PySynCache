@@ -29,10 +29,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 COPY --from=builder /app/dist/pysyncache*/ pysyncache.tar.gz
-COPY tests tests
-
 RUN pip install pysyncache.tar.gz
-RUN python -m unittest tests/test_serializing.py -v
+
+
+COPY tests tests
+WORKDIR /app/tests
+RUN python -m unittest -v
 
 from alpine:latest as exporter
 COPY --from=tester /app/pysyncache.tar.gz pysyncache.tar.gz
