@@ -4,7 +4,6 @@
 #include <optional>
 #include <string>
 #include <vector>
-#include <ctime>
 
 class Controller {
     struct Impl;
@@ -18,12 +17,12 @@ public:
     void set(const std::string &nameSpace,
              const std::string &id,
              const std::string &value,
-             const std::optional<std::time_t> &ttl) const;
+             const std::optional<long> &ttl) const;
 
     void set(const std::string &nameSpace,
              const std::string &id,
              const std::vector<uint8_t> &value,
-             const std::optional<std::time_t> &ttl) const;
+             const std::optional<long> &ttl) const;
 
     std::optional<std::vector<uint8_t> > getRaw(const std::string &nameSpace, const std::string &id) const;
 
