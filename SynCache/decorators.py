@@ -67,7 +67,7 @@ def cacheable(namespace: str, key: str, return_type=None):
     return decorator
 
 
-def cache_put(value: str, key: str):
+def cache_put(namespace: str, key: str):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -75,7 +75,7 @@ def cache_put(value: str, key: str):
             result = func(*args, **kwargs)
 
             cache_key = str(_eval_expr(key, args, kwargs, result=result))
-            controller.set(value, cache_key, result)
+            controller.set(namespace, cache_key, result)
 
             return result
 
@@ -84,7 +84,7 @@ def cache_put(value: str, key: str):
     return decorator
 
 
-def cache_evict(value: str, key: str = None, all_entries=False):
+def cache_evict(namespace: str, key: str = None, all_entries=False):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -92,11 +92,14 @@ def cache_evict(value: str, key: str = None, all_entries=False):
 
             result = func(*args, **kwargs)
 
+            if not all_entries and key is None:
+                raise SyntaxError("Either 'key' or 'all_entries' must be specified.")
+
             if all_entries:
-                controller.evict_namespace(value)
+                controller.evict_namespace(namespace)
             else:
                 cache_key = str(_eval_expr(key, args, kwargs, result=result))
-                controller.evict(value, cache_key)
+                controller.evict(namespace, cache_key)
 
             return result
 

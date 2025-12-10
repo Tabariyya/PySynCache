@@ -42,7 +42,7 @@ class Controller(_Controller):
 
         if value is None:
             return None
-        if return_type is not None:
+        if return_type is not None and return_type != str:
             return jsons.loads(value.decode("utf-8"), return_type)
         return value.decode("utf-8")
 
