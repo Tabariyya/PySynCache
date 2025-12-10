@@ -1,24 +1,12 @@
+import re
 from functools import wraps
 
 from SynCache.Controller import Controller
 
 
-def _eval_expr(expr, args, kwargs, result=None):
-    """
-    Evaluate expressions like:
-    - "#id"
-    - "#user.id"
-    - "#result.id"
-    """
-
-    if not expr.startswith("#"):
-        return expr
-
-
-
+def _eval_single(expr, args, kwargs, result=None):
+    """Evaluate a single '#expr' like '#user.id'."""
     expr = expr[1:]  # remove leading '#'
-
-    # Ex: "result.id"
     parts = expr.split(".")
 
     if parts[0] == "result":
@@ -27,16 +15,34 @@ def _eval_expr(expr, args, kwargs, result=None):
         value = kwargs[parts[0]]
     else:
         raise SyntaxError(
-            f"Cannot evaluate expression '#{expr}'."
+            f"Cannot evaluate expression '#{expr}'. "
             f"To use parameter names in cache key expressions, you must call your function with named parameters.\n"
             f"Example: Instead of get_user(123), use get_user(user_id=123)"
         )
 
-    # evaluate attribute chain: "user.id"
     for p in parts[1:]:
         value = getattr(value, p) if hasattr(value, p) else value[p]
 
     return value
+
+
+def _eval_expr(expr, args, kwargs, result=None):
+    """
+    Evaluate compound expressions like:
+    - "#user.id-#order_type"
+    - "#user.id_#order_type"
+    - "#user.id/#order_type"
+    - "#user.id#order_type"
+    """
+
+    # Regex that captures:
+    # #word(.word)*
+    pattern = r"#\w+(?:\.\w+)*"
+
+    def replacer(match):
+        return str(_eval_single(match.group(0), args, kwargs, result))
+
+    return re.sub(pattern, replacer, expr)
 
 
 def cacheable(namespace: str, key: str, return_type=None):

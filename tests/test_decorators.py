@@ -29,7 +29,7 @@ class TestController(unittest.TestCase):
         """Test expression with keyword argument"""
         kwargs = {"user_id": 123, "name": "John"}
         result = _eval_expr("#user_id", (), kwargs, None)
-        self.assertEqual(result, 123)
+        self.assertEqual(result, "123")
 
     def test_eval_expr_object_attribute(self):
         """Test expression with object attribute access"""
@@ -42,10 +42,13 @@ class TestController(unittest.TestCase):
         user = User()
         kwargs = {"user": user}
         result = _eval_expr("#user.id", (), kwargs, None)
-        self.assertEqual(result, 456)
+        self.assertEqual(result, "456")
 
         result = _eval_expr("#user.name", (), kwargs, None)
         self.assertEqual(result, "Jane")
+
+        result = _eval_expr("#user.name-#user.id", (), kwargs, None)
+        self.assertEqual(result, "Jane-456")
 
     def test_eval_expr_result_attribute(self):
         """Test expression with result object attribute access"""
@@ -57,7 +60,7 @@ class TestController(unittest.TestCase):
 
         result_obj = Result()
         result = _eval_expr("#result.id", (), {}, result_obj)
-        self.assertEqual(result, 789)
+        self.assertEqual(result, "789")
 
     def test_eval_expr_nested_attribute(self):
         """Test expression with nested attribute access"""
@@ -69,14 +72,14 @@ class TestController(unittest.TestCase):
         profile = Profile()
         kwargs = {"profile": profile}
         result = _eval_expr("#profile.user.id", (), kwargs, None)
-        self.assertEqual(result, 999)
+        self.assertEqual(result, "999")
 
     def test_eval_expr_dict_access(self):
         """Test expression with dictionary access"""
         data = {"id": 111, "name": "DictUser", "meta": {"role": "admin"}}
         kwargs = {"data": data}
         result = _eval_expr("#data.id", (), kwargs, None)
-        self.assertEqual(result, 111)
+        self.assertEqual(result, "111")
 
         result = _eval_expr("#data.meta.role", (), kwargs, None)
         self.assertEqual(result, "admin")
@@ -166,25 +169,65 @@ class TestCacheableDecorator(unittest.TestCase):
         self.assertEqual(call_count["count"], 2)
         self.assertEqual(result3["category"], "books")
 
-    # def test_cacheable_with_complex_key(self):
-    #     """Test Cacheable with complex key expression"""
-    #     call_count = {"count": 0}
-    #
-    #     @cacheable(namespace="orders", key="#user.id-#order_type", return_type=dict)
-    #     def get_order(user, order_type):
-    #         call_count["count"] += 1
-    #         return {"user_id": user.id, "order_type": order_type, "data": "order_data"}
-    #
-    #     user = Person(first_name="Test", last_name="User", id=789)
-    #
-    #     result1 = get_order(user=user, order_type="pending")
-    #     self.assertEqual(call_count["count"], 1)
-    #
-    #     result2 = get_order(user=user, order_type="pending")
-    #     self.assertEqual(call_count["count"], 1)
-    #
-    #     result3 = get_order(user=user, order_type="completed")
-    #     self.assertEqual(call_count["count"], 2)
+    def test_cacheable_with_complex_key(self):
+        """Test Cacheable with complex key expression"""
+        call_count = {"count": 0}
+
+        @cacheable(namespace="orders", key="#user.id-#order_type", return_type=dict)
+        def get_order(user, order_type):
+            call_count["count"] += 1
+            return {"user_id": user.id, "order_type": order_type, "data": "order_data"}
+
+        user = Person(first_name="Test", last_name="User", id=789)
+
+        result1 = get_order(user=user, order_type="pending")
+        self.assertEqual(call_count["count"], 1)
+
+        result2 = get_order(user=user, order_type="pending")
+        self.assertEqual(call_count["count"], 1)
+
+        result3 = get_order(user=user, order_type="completed")
+        self.assertEqual(call_count["count"], 2)
+
+    def test_cacheable_with_complex_key2(self):
+        """Test Cacheable with complex key expression"""
+        call_count = {"count": 0}
+
+        @cacheable(namespace="orders", key="#user.id#order_type", return_type=dict)
+        def get_order(user, order_type):
+            call_count["count"] += 1
+            return {"user_id": user.id, "order_type": order_type, "data": "order_data"}
+
+        user = Person(first_name="Test", last_name="User", id=789)
+
+        result1 = get_order(user=user, order_type="pending")
+        self.assertEqual(call_count["count"], 1)
+
+        result2 = get_order(user=user, order_type="pending")
+        self.assertEqual(call_count["count"], 1)
+
+        result3 = get_order(user=user, order_type="completed")
+        self.assertEqual(call_count["count"], 2)
+
+    def test_cacheable_with_complex_key3(self):
+        """Test Cacheable with complex key expression"""
+        call_count = {"count": 0}
+
+        @cacheable(namespace="orders", key="#user.id&#order_type", return_type=dict)
+        def get_order(user, order_type):
+            call_count["count"] += 1
+            return {"user_id": user.id, "order_type": order_type, "data": "order_data"}
+
+        user = Person(first_name="Test", last_name="User", id=789)
+
+        result1 = get_order(user=user, order_type="pending")
+        self.assertEqual(call_count["count"], 1)
+
+        result2 = get_order(user=user, order_type="pending")
+        self.assertEqual(call_count["count"], 1)
+
+        result3 = get_order(user=user, order_type="completed")
+        self.assertEqual(call_count["count"], 2)
 
 
 if __name__ == '__main__':
