@@ -1,0 +1,99 @@
+from functools import wraps
+
+from SynCache.Controller import Controller
+
+
+def _eval_expr(expr, args, kwargs, result=None):
+    """
+    Evaluate expressions like:
+    - "#id"
+    - "#user.id"
+    - "#result.id"
+    """
+
+    if not expr.startswith("#"):
+        return expr
+
+
+
+    expr = expr[1:]  # remove leading '#'
+
+    # Ex: "result.id"
+    parts = expr.split(".")
+
+    if parts[0] == "result":
+        value = result
+    elif parts[0] in kwargs:
+        value = kwargs[parts[0]]
+    else:
+        raise SyntaxError(
+            f"Cannot evaluate expression '#{expr}'."
+            f"To use parameter names in cache key expressions, you must call your function with named parameters.\n"
+            f"Example: Instead of get_user(123), use get_user(user_id=123)"
+        )
+
+    # evaluate attribute chain: "user.id"
+    for p in parts[1:]:
+        value = getattr(value, p) if hasattr(value, p) else value[p]
+
+    return value
+
+
+def cacheable(namespace: str, key: str, return_type=None):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            controller = Controller.get_instance()
+
+            cache_key = str(_eval_expr(key, args, kwargs))
+            cached = controller.get(namespace, cache_key, return_type)
+
+            if cached is not None:
+                return cached
+
+            result = func(*args, **kwargs)
+
+            controller.set(namespace, cache_key, result)
+            return result
+
+        return wrapper
+
+    return decorator
+
+
+def cache_put(value: str, key: str):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            controller = Controller.get_instance()
+            result = func(*args, **kwargs)
+
+            cache_key = str(_eval_expr(key, args, kwargs, result=result))
+            controller.set(value, cache_key, result)
+
+            return result
+
+        return wrapper
+
+    return decorator
+
+
+def cache_evict(value: str, key: str = None, all_entries=False):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            controller = Controller.get_instance()
+
+            result = func(*args, **kwargs)
+
+            if all_entries:
+                controller.evict_namespace(value)
+            else:
+                cache_key = str(_eval_expr(key, args, kwargs, result=result))
+                controller.evict(value, cache_key)
+
+            return result
+
+        return wrapper
+
+    return decorator

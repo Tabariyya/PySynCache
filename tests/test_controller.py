@@ -246,6 +246,32 @@ class TestController(unittest.TestCase):
         self.assertIsNotNone(result_recent)
         self.assertEqual(result_recent.first_name, "Person109")
 
+    def test_setting_string(self):
+        self.controller.set("ns1", "key1", "waleed")
+        result = self.controller.get("ns1", "key1")
+        self.assertEqual(result, "waleed")
+
+    def test_setting_integer(self):
+        self.controller.set("ns1", "key1", 5)
+        result = self.controller.get("ns1", "key1", int)
+        self.assertEqual(result, 5)
+
+    def test_setting_float(self):
+        self.controller.set("ns1", "key1", 5.5)
+        result = self.controller.get("ns1", "key1", float)
+        self.assertEqual(result, 5.5)
+
+    def test_setting_boolean(self):
+        self.controller.set("ns1", "key1", True)
+        result = self.controller.get("ns1", "key1", bool)
+        self.assertEqual(result, True)
+
+    def test_setting_none(self):
+        self.controller.set("ns1", "key1", None)
+        result = self.controller.get("ns1", "key1")
+        self.assertEqual(result, None)
+
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

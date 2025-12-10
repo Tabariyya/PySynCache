@@ -33,7 +33,8 @@ class Controller(_Controller):
         super().__init__(broker_url, broker_auth_token, max_entries)
 
     def set(self, namespace: str, id: str, value, ttl: int = None):
-        value = jsons.dumps(value)
+        if not isinstance(value, str):
+            value = jsons.dumps(value)
         super().set(str(namespace), str(id), value.encode("utf-8"), ttl)
 
     def get(self, namespace: str, id: str, return_type=None):
