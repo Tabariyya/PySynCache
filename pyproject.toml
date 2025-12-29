@@ -8,8 +8,8 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "syncache"
-version = "1.0.0"
+name = "pysyncache"
+version = "0.0.1"
 description = "High-performance distributed caching system with real-time data synchronization (Python bindings for SynCache)"
 readme = "README.md"
 requires-python = ">=3.7"
