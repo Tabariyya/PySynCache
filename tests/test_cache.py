@@ -1,7 +1,7 @@
 import time
 import unittest
 
-from SynCache.Controller import Controller
+from SynCache.Cache import Cache
 
 
 class Person:
@@ -14,10 +14,10 @@ class TestController(unittest.TestCase):
 
     def setUp(self):
         """Set up test environment before each test"""
-        Controller.initialize("ws://91.93.135.176:25672/",
+        Cache.initialize("wss://broker.syncache.tabariyya.com/",
                               "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjI2MjgwMjc2MDUsInN1YiI6Imdvb2dsZSJ9.XgGmtV7ffxFI_a_g6U7lT_6mn2hc7RvJhO3lukUgMhRflgA5UwwHPt-5c5-uF_wsyA3HPmwQg_cjvI_JrG122OHqbC7Y-16059W-r4W_QALEgHHZKcijf_5g1CsG4DjGfHYJI4JmwrogQ0_yj4UUCD6OMY5v5g0QH4FCsxWcaI4",
-                              100)
-        self.controller = Controller.get_instance()
+                         100)
+        self.controller = Cache.get_instance()
 
     def tearDown(self):
         """Clean up after each test"""

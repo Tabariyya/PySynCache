@@ -8,36 +8,60 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pysyncache"
+name = "syncache"
 version = "1.0.0"
-description = "Python bindings for SynCache distributed caching system"
+description = "High-performance distributed caching system with real-time data synchronization (Python bindings for SynCache)"
 readme = "README.md"
 requires-python = ">=3.7"
 authors = [
     { name = "Waleed Shanaa", email = "waleed.shanaa@outlook.com" }
 ]
+
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
+
+    # OS support
     "Operating System :: POSIX :: Linux",
     "Operating System :: MacOS :: MacOS X",
     "Operating System :: Microsoft :: Windows",
+
+    # Languages
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: C++",
+
+    # Domain
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: System :: Distributed Computing",
+    "Topic :: System :: Networking",
+    "Topic :: System :: Caching",
+    "Topic :: System :: High Performance Computing"
 ]
+
 dependencies = [
     "jsons>=1.6"
 ]
-keywords = ["cache", "distributed", "caching", "synapse", "performance"]
+
+keywords = [
+    "cache",
+    "distributed-cache",
+    "realtime",
+    "synchronization",
+    "pubsub",
+    "high-performance",
+    "caching",
+    "syncache",
+    "data",
+    "distributed-systems"
+]
 
 [project.urls]
 Homepage = "https://github.com/synCache-org/PySynCache"

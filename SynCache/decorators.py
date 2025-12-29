@@ -1,7 +1,7 @@
 import re
 from functools import wraps
 
-from SynCache.Controller import Controller
+from SynCache.Cache import Cache
 
 
 def _eval_single(expr, args, kwargs, result=None):
@@ -49,7 +49,7 @@ def cacheable(namespace: str, key: str, return_type=None):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            controller = Controller.get_instance()
+            controller = Cache.get_instance()
 
             cache_key = str(_eval_expr(key, args, kwargs))
             cached = controller.get(namespace, cache_key, return_type)
@@ -71,7 +71,7 @@ def cache_put(namespace: str, key: str):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            controller = Controller.get_instance()
+            controller = Cache.get_instance()
             result = func(*args, **kwargs)
 
             cache_key = str(_eval_expr(key, args, kwargs, result=result))
@@ -88,7 +88,7 @@ def cache_evict(namespace: str, key: str = None, all_entries=False):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            controller = Controller.get_instance()
+            controller = Cache.get_instance()
 
             result = func(*args, **kwargs)
 

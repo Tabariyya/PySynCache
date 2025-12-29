@@ -119,40 +119,14 @@ class CMakeBuild(build_ext):
 
 
 setup(
-    name="pysyncache",
+    name="SynCache",
     version="1.0.0",
     packages=["SynCache"],
     ext_modules=[CMakeExtension('SynCache._core')],
     cmdclass={'build_ext': CMakeBuild},
     python_requires=">=3.7",
-    zip_safe=False,
-
     setup_requires=["pybind11>=2.6"],
-
     author="Waleed Shanaa",
     author_email="waleed.shanaa@outlook.com",
-    description="Python bindings for SynCache",
-    long_description=open("README.md").read() if Path("README.md").exists() else "",
-    long_description_content_type="text/markdown",
-    license="MIT",
 
-    classifiers=[
-        "Development Status :: 4 - Beta",
-        "Intended Audience :: Developers",
-        "License :: OSI Approved :: MIT License",
-        "Operating System :: POSIX :: Linux",
-        "Operating System :: MacOS :: MacOS X",
-        "Operating System :: Microsoft :: Windows",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
-        "Programming Language :: Python :: 3.12",
-        "Programming Language :: Python :: 3.13",
-        "Programming Language :: Python :: 3.14",
-        "Programming Language :: C++",
-        "Topic :: Software Development :: Libraries :: Python Modules",
-        "Topic :: System :: Distributed Computing",
-    ], install_requires=['jsons']
 )
