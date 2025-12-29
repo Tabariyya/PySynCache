@@ -28,14 +28,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
-COPY --from=builder /app/dist/pysyncache*/ pysyncache.tar.gz
-RUN pip install pysyncache.tar.gz
+COPY --from=builder /app/dist/syncache*/ syncache.tar.gz
+RUN pip install syncache.tar.gz
 
-
+ARG BROKER_TOKEN
+ENV BROKER_TOKEN=${BROKER_TOKEN}
 COPY tests tests
 WORKDIR /app/tests
 RUN python -m unittest -v
 
 from alpine:latest as exporter
-COPY --from=tester /app/pysyncache.tar.gz pysyncache.tar.gz
+COPY --from=tester /app/syncache.tar.gz syncache.tar.gz
 

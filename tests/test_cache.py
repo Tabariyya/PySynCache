@@ -1,3 +1,4 @@
+import os
 import time
 import unittest
 
@@ -15,7 +16,7 @@ class TestController(unittest.TestCase):
     def setUp(self):
         """Set up test environment before each test"""
         Cache.initialize("wss://broker.syncache.tabariyya.com/",
-                              REMOVED_SECRET,
+                         os.environ.get("BROKER_TOKEN"),
                          100)
         self.controller = Cache.get_instance()
 
@@ -270,7 +271,6 @@ class TestController(unittest.TestCase):
         self.controller.set("ns1", "key1", None)
         result = self.controller.get("ns1", "key1")
         self.assertEqual(result, None)
-
 
 
 if __name__ == '__main__':

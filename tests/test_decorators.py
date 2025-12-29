@@ -1,3 +1,4 @@
+import os
 import unittest
 
 from SynCache.Cache import Cache
@@ -91,7 +92,7 @@ class TestCacheableDecorator(unittest.TestCase):
     def setUp(self):
         """Set up test environment"""
         Cache.initialize("wss://broker.syncache.tabariyya.com/",
-                              REMOVED_SECRET,
+                              os.environ.get("BROKER_TOKEN"),
                          100)
         self.controller = Cache.get_instance()
 
@@ -236,7 +237,7 @@ class TestCachePutDecorator(unittest.TestCase):
     def setUp(self):
         """Set up test environment"""
         Cache.initialize("wss://broker.syncache.tabariyya.com/",
-                              REMOVED_SECRET,
+                              os.environ.get("BROKER_TOKEN"),
                          100)
         self.controller = Cache.get_instance()
 
@@ -524,7 +525,7 @@ class TestCacheEvictDecorator(unittest.TestCase):
     def setUp(self):
         """Set up test environment"""
         Cache.initialize("wss://broker.syncache.tabariyya.com/",
-                              REMOVED_SECRET,
+                              os.environ.get("BROKER_TOKEN"),
                          100)
         self.controller = Cache.get_instance()
 
