@@ -1,7 +1,7 @@
 import time
 import unittest
 
-from SynCache.Controller import Controller
+from SynCache.Cache import Cache
 
 
 class Person:
@@ -14,11 +14,10 @@ class TestController(unittest.TestCase):
 
     def setUp(self):
         """Set up test environment before each test"""
-        self.controller = Controller(
-            "ws://91.93.135.176:25672/",
-            REMOVED_SECRET,
-            100
-        )
+        Cache.initialize("wss://broker.syncache.tabariyya.com/",
+                              REMOVED_SECRET,
+                         100)
+        self.controller = Cache.get_instance()
 
     def tearDown(self):
         """Clean up after each test"""
@@ -246,6 +245,32 @@ class TestController(unittest.TestCase):
         result_recent = self.controller.get("limit_ns", "key109", Person)
         self.assertIsNotNone(result_recent)
         self.assertEqual(result_recent.first_name, "Person109")
+
+    def test_setting_string(self):
+        self.controller.set("ns1", "key1", "waleed")
+        result = self.controller.get("ns1", "key1")
+        self.assertEqual(result, "waleed")
+
+    def test_setting_integer(self):
+        self.controller.set("ns1", "key1", 5)
+        result = self.controller.get("ns1", "key1", int)
+        self.assertEqual(result, 5)
+
+    def test_setting_float(self):
+        self.controller.set("ns1", "key1", 5.5)
+        result = self.controller.get("ns1", "key1", float)
+        self.assertEqual(result, 5.5)
+
+    def test_setting_boolean(self):
+        self.controller.set("ns1", "key1", True)
+        result = self.controller.get("ns1", "key1", bool)
+        self.assertEqual(result, True)
+
+    def test_setting_none(self):
+        self.controller.set("ns1", "key1", None)
+        result = self.controller.get("ns1", "key1")
+        self.assertEqual(result, None)
+
 
 
 if __name__ == '__main__':
