@@ -11,7 +11,6 @@ typedef struct controller_handle controller_handle_t;
 
 /* Create / destroy */
 controller_handle_t *controller_create(
-    const char *broker_url,
     const char *broker_auth_token,
     long max_no_of_entries
 );

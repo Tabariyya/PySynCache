@@ -10,7 +10,7 @@ class Controller {
     std::unique_ptr<Impl> impl;
 
 public:
-    explicit Controller(const std::string &BrokerURL, const std::string &brokerAuthToken, long maxNoOfEntries);
+    explicit Controller(const std::string &brokerAuthToken, long maxNoOfEntries);
 
     ~Controller();
 
