@@ -5,7 +5,6 @@ from ._core import Controller as _Controller
 
 class Cache(_Controller):
     _instance = None
-    _broker_url = None
     _broker_auth_token = None
     _max_entries = None
 
@@ -13,7 +12,7 @@ class Cache(_Controller):
     def get_instance(cls):
         """Get the singleton instance."""
         if cls._instance is None:
-            cls._instance = Cache(cls._broker_url, cls._broker_auth_token,
+            cls._instance = Cache(cls._broker_auth_token,
                                   cls._max_entries)
         return cls._instance
 
@@ -23,14 +22,13 @@ class Cache(_Controller):
         return cls._instance is not None
 
     @classmethod
-    def initialize(cls, broker_url: str, broker_auth_token: str, max_entries: int):
+    def initialize(cls, broker_auth_token: str, max_entries: int):
         """Initialize the singleton instance."""
-        cls._broker_url = broker_url
         cls._broker_auth_token = broker_auth_token
         cls._max_entries = max_entries
 
-    def __init__(self, broker_url, broker_auth_token, max_entries):
-        super().__init__(broker_url, broker_auth_token, max_entries)
+    def __init__(self, broker_auth_token, max_entries):
+        super().__init__(broker_auth_token, max_entries)
 
     def set(self, namespace: str, id: str, value, ttl: int = None):
         if not isinstance(value, str):

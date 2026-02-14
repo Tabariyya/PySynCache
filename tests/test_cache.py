@@ -15,8 +15,7 @@ class TestController(unittest.TestCase):
 
     def setUp(self):
         """Set up test environment before each test"""
-        Cache.initialize("wss://broker.syncache.tabariyya.com/",
-                         os.environ.get("BROKER_TOKEN"),
+        Cache.initialize(os.environ.get("BROKER_TOKEN"),
                          100)
         self.controller = Cache.get_instance()
 

@@ -1,7 +1,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/functional.h>
-#include "synCache/Controller.h"
+#include "synCache/Controller.hpp"
 
 namespace py = pybind11;
 
@@ -10,8 +10,7 @@ PYBIND11_MODULE(_core, m) {
 
     // Bind Controller class
     py::class_<Controller>(m, "Controller")
-        .def(py::init<const std::string&, const std::string&, long>(),
-             py::arg("broker_url"),
+        .def(py::init< const std::string&, long>(),
              py::arg("broker_auth_token"),
              py::arg("max_entries"))
 

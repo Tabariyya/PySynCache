@@ -91,9 +91,9 @@ class TestCacheableDecorator(unittest.TestCase):
 
     def setUp(self):
         """Set up test environment"""
-        Cache.initialize("wss://broker.syncache.tabariyya.com/",
-                              os.environ.get("BROKER_TOKEN"),
-                         100)
+        Cache.initialize(
+            os.environ.get("BROKER_TOKEN"),
+            100)
         self.controller = Cache.get_instance()
 
     def tearDown(self):
@@ -236,9 +236,9 @@ class TestCachePutDecorator(unittest.TestCase):
 
     def setUp(self):
         """Set up test environment"""
-        Cache.initialize("wss://broker.syncache.tabariyya.com/",
-                              os.environ.get("BROKER_TOKEN"),
-                         100)
+        Cache.initialize(
+            os.environ.get("BROKER_TOKEN"),
+            100)
         self.controller = Cache.get_instance()
 
     def tearDown(self):
@@ -524,9 +524,9 @@ class TestCacheEvictDecorator(unittest.TestCase):
 
     def setUp(self):
         """Set up test environment"""
-        Cache.initialize("wss://broker.syncache.tabariyya.com/",
-                              os.environ.get("BROKER_TOKEN"),
-                         100)
+        Cache.initialize(
+            os.environ.get("BROKER_TOKEN"),
+            100)
         self.controller = Cache.get_instance()
 
     def tearDown(self):
@@ -787,7 +787,6 @@ class TestCacheEvictDecorator(unittest.TestCase):
 
         self.assertEqual(call_count["evict"], 2)  # Still called
 
-
     def test_cache_evict_without_key_when_all_entries_false(self):
         """Test CacheEvict behavior when all_entries=False but no key provided"""
 
@@ -862,6 +861,7 @@ class TestCacheEvictDecorator(unittest.TestCase):
         self.assertIn("get_1", execution_order)
         # Should appear twice if eviction worked
         self.assertEqual(len([x for x in execution_order if x == "get_1"]), 2)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
