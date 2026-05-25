@@ -37,13 +37,14 @@ void controller_set_raw(
 );
 
 /* Get raw value
- * - buffer is allocated by the function
+ * - buffer is allocated by the function, size written to *out_size
  * - caller must free it with controller_free()
  */
 uint8_t *controller_get_raw(
     const controller_handle_t *handle,
     const char *name_space,
-    const char *id
+    const char *id,
+    size_t *out_size
 );
 
 /* Get string value
