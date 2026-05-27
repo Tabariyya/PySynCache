@@ -19,7 +19,7 @@ class Person:
                 self.id == other.id)
 
 
-class TestController(unittest.TestCase):
+class TestEvaluatingExpressions(unittest.TestCase):
 
     def test_eval_expr_plain_string(self):
         """Test non-expression string returns as is"""

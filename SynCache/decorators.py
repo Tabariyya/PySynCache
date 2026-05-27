@@ -1,7 +1,7 @@
 import re
 from functools import wraps
 
-from SynCache.Cache import Cache
+from SynCache.Cache import Cache, CACHE_MISS
 
 
 def _eval_single(expr, args, kwargs, result=None):
@@ -54,7 +54,7 @@ def cacheable(namespace: str, key: str, return_type=None):
             cache_key = str(_eval_expr(key, args, kwargs))
             cached = controller.get(namespace, cache_key, return_type)
 
-            if cached is not None:
+            if cached is not CACHE_MISS:
                 return cached
 
             result = func(*args, **kwargs)
