@@ -58,7 +58,8 @@ class Cache(_Controller):
                 value = jsons.dumps(value)
             super().set(str(namespace), str(id), value.encode('UTF-8'), ttl)
 
-    def get(self, namespace: str, id: str, return_type=None):
+    def _get(self, namespace: str, id: str, return_type=None):
+        """Returns CACHE_MISS for misses; None for a cached None. Used internally by decorators."""
         value = super().get(str(namespace), str(id))
         if value is None:
             return CACHE_MISS
@@ -68,6 +69,10 @@ class Cache(_Controller):
         if return_type is not None and return_type != str:
             return jsons.loads(decoded, return_type)
         return decoded
+
+    def get(self, namespace: str, id: str, return_type=None):
+        result = self._get(namespace, id, return_type)
+        return None if result is CACHE_MISS else result
 
     def evict(self, namespace: str, id: str):
         super().evict(namespace, id)

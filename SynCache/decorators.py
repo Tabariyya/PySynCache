@@ -52,7 +52,7 @@ def cacheable(namespace: str, key: str, return_type=None):
             controller = Cache.get_instance()
 
             cache_key = str(_eval_expr(key, args, kwargs))
-            cached = controller.get(namespace, cache_key, return_type)
+            cached = controller._get(namespace, cache_key, return_type)
 
             if cached is not CACHE_MISS:
                 return cached

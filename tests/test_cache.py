@@ -2,7 +2,7 @@ import os
 import time
 import unittest
 
-from SynCache.Cache import Cache, CACHE_MISS
+from SynCache.Cache import Cache
 
 
 class Person:
@@ -68,7 +68,7 @@ class TestController(unittest.TestCase):
     def test_get_nonexistent_key(self):
         """Test retrieving a key that doesn't exist"""
         result = self.controller.get("nonexistent_ns", "nonexistent_key")
-        self.assertIs(result, CACHE_MISS)
+        self.assertIsNone(result)
 
     def test_overwrite_existing_key(self):
         """Test overwriting an existing key"""
@@ -100,7 +100,7 @@ class TestController(unittest.TestCase):
         result1_after = self.controller.get("ns", "key1")
         result2_after = self.controller.get("ns", "key2", Person)
 
-        self.assertIs(result1_after, CACHE_MISS)
+        self.assertIsNone(result1_after)
         self.assertIsNotNone(result2_after)
         self.assertEqual(result2_after.first_name, "Test")
 
@@ -116,8 +116,8 @@ class TestController(unittest.TestCase):
         self.controller.evict_namespace("ns1")
 
         # ns1 keys should be gone
-        self.assertIs(self.controller.get("ns1", "key1"), CACHE_MISS)
-        self.assertIs(self.controller.get("ns1", "key2"), CACHE_MISS)
+        self.assertIsNone(self.controller.get("ns1", "key1"))
+        self.assertIsNone(self.controller.get("ns1", "key2"))
 
         # ns2 key should still exist
         result_ns2 = self.controller.get("ns2", "key1", Person)
@@ -136,9 +136,9 @@ class TestController(unittest.TestCase):
         self.controller.evict_all()
 
         # All keys should be gone
-        self.assertIs(self.controller.get("ns1", "key1"), CACHE_MISS)
-        self.assertIs(self.controller.get("ns2", "key1"), CACHE_MISS)
-        self.assertIs(self.controller.get("ns3", "key1"), CACHE_MISS)
+        self.assertIsNone(self.controller.get("ns1", "key1"))
+        self.assertIsNone(self.controller.get("ns2", "key1"))
+        self.assertIsNone(self.controller.get("ns3", "key1"))
 
     def test_get_without_return_type(self):
         """Test get method without specifying return type"""
@@ -227,7 +227,7 @@ class TestController(unittest.TestCase):
 
         # Should be expired
         result = self.controller.get("expire_ns", "key1")
-        self.assertIs(result, CACHE_MISS)
+        self.assertIsNone(result)
 
     def test_memory_limits(self):
         """Test behavior when reaching max_entries limit"""
