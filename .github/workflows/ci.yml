@@ -13,9 +13,17 @@ jobs:
     runs-on: self-hosted
 
     steps:
+      - name: Install git-lfs
+        run: |
+          sudo apt-get install -y git-lfs
+          git lfs install
+
       - uses: actions/checkout@v4
         with:
           lfs: true
+
+      - name: Pull LFS objects
+        run: git lfs pull
 
       - name: Build and test
         run: |
@@ -58,9 +66,17 @@ jobs:
     if: needs.check-version.outputs.changed == 'true'
 
     steps:
+      - name: Install git-lfs
+        run: |
+          sudo apt-get install -y git-lfs
+          git lfs install
+
       - uses: actions/checkout@v4
         with:
           lfs: true
+
+      - name: Pull LFS objects
+        run: git lfs pull
 
       - name: Build release artifact
         run: docker build --target exporter -t pysyncache-exporter .
