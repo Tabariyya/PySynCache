@@ -81,19 +81,17 @@ jobs:
       - name: Pull LFS objects
         run: git lfs pull
 
-      - name: Build release artifact
-        run: docker build --target exporter -t pysyncache-exporter .
-
-      - name: Extract dist
-        run: |
-          CONTAINER=$(docker create pysyncache-exporter)
-          docker cp "$CONTAINER:/dist" ./dist
-          docker rm "$CONTAINER"
-          docker rmi pysyncache-exporter --force
+      - name: Build publisher image
+        run: docker build -t pysyncache-publisher .
 
       - name: Publish to PyPI
         run: |
-          python3 -m pip install --quiet twine
-          python3 -m twine upload dist/* \
-            --username __token__ \
-            --password ${{ secrets.PYPI_TOKEN }}
+          docker run --rm \
+            -e TWINE_USERNAME=__token__ \
+            -e TWINE_PASSWORD=${{ secrets.PYPI_TOKEN }} \
+            pysyncache-publisher \
+            twine upload /dist/*
+
+      - name: Clean up
+        if: always()
+        run: docker rmi pysyncache-publisher --force

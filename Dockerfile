@@ -34,5 +34,5 @@ COPY tests tests
 RUN python -m unittest discover -v tests/
 
 FROM alpine:latest AS exporter
-
+RUN pip install --no-cache-dir twine
 COPY --from=builder /app/dist /dist
