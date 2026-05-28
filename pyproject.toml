@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pysyncache"
-version = "0.0.1"
+version = "1.0.5"
 description = "High-performance distributed caching system with real-time data synchronization (Python bindings for SynCache)"
 readme = "README.md"
 requires-python = ">=3.7"
@@ -64,7 +64,7 @@ keywords = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/synCache-org/PySynCache"
-Repository = "https://github.com/synCache-org/PySynCache"
-Documentation = "https://github.com/synCache-org/PySynCache#readme"
-Issues = "https://github.com/synCache-org/PySynCache/issues"
+Homepage = "https://syncache.tabariyya.com"
+Repository = "https://github.com/Tabariyya/PySynCache"
+Documentation = "https://syncache.tabariyya.com/#docs"
+Issues = "https://github.com/Tabariyya/PySynCache/issues"

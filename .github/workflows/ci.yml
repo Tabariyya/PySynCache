@@ -1,0 +1,75 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [development]
+  pull_request:
+    branches: [development]
+
+jobs:
+  test:
+    name: Build & Test
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and test
+        run: |
+          docker build \
+            --target tester \
+            --build-arg BROKER_TOKEN=${{ secrets.BROKER_TOKEN }} \
+            -t pysyncache-test \
+            .
+
+      - name: Clean up
+        if: always()
+        run: docker rmi pysyncache-test --force
+
+  check-version:
+    name: Check version bump
+    runs-on: self-hosted
+    needs: test
+    if: github.event_name == 'push'
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect version change
+        id: check
+        run: |
+          if git diff HEAD~1 HEAD -- pyproject.toml | grep -q '^+version'; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+  publish:
+    name: Publish to PyPI
+    runs-on: self-hosted
+    needs: [test, check-version]
+    if: needs.check-version.outputs.changed == 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build release artifact
+        run: docker build --target exporter -t pysyncache-exporter .
+
+      - name: Extract dist
+        run: |
+          CONTAINER=$(docker create pysyncache-exporter)
+          docker cp "$CONTAINER:/dist" ./dist
+          docker rm "$CONTAINER"
+          docker rmi pysyncache-exporter --force
+
+      - name: Publish to PyPI
+        run: |
+          pip install --quiet twine
+          twine upload dist/* \
+            --username __token__ \
+            --password ${{ secrets.PYPI_TOKEN }}
