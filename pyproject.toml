@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pysyncache"
-version = "1.0.5"
+version = "1.0.5.1"
 description = "High-performance distributed caching system with real-time data synchronization (Python bindings for SynCache)"
 readme = "README.md"
 requires-python = ">=3.7"
@@ -19,15 +19,17 @@ authors = [
 
 classifiers = [
     "Development Status :: 4 - Beta",
+
     "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: System Administrators",
+
     "License :: OSI Approved :: MIT License",
 
-    # OS support
     "Operating System :: POSIX :: Linux",
     "Operating System :: MacOS :: MacOS X",
     "Operating System :: Microsoft :: Windows",
 
-    # Languages
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.7",
@@ -38,11 +40,12 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: C++",
 
-    # Domain
+    "Topic :: Software Development :: Libraries",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: System :: Distributed Computing",
+    "Topic :: System :: Clustering",
     "Topic :: System :: Networking",
-    "Topic :: System :: High Performance Computing"
+    "Topic :: Database",
 ]
 
 dependencies = [
@@ -52,14 +55,14 @@ dependencies = [
 keywords = [
     "cache",
     "distributed-cache",
-    "realtime",
-    "synchronization",
-    "pubsub",
+    "in-process-cache",
+    "cache-synchronization",
+    "cluster-cache",
     "high-performance",
-    "caching",
+    "low-latency",
     "syncache",
-    "data",
-    "distributed-systems"
+    "distributed-systems",
+    "cache-coherence"
 ]
 
 [project.urls]
