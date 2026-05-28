@@ -42,7 +42,6 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: System :: Distributed Computing",
     "Topic :: System :: Networking",
-    "Topic :: System :: Caching",
     "Topic :: System :: High Performance Computing"
 ]
 
