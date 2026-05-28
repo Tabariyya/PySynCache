@@ -5,6 +5,7 @@ on:
     branches: [development]
   pull_request:
     branches: [development]
+  workflow_dispatch:
 
 jobs:
   test:
@@ -13,6 +14,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Build and test
         run: |
@@ -56,6 +59,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Build release artifact
         run: docker build --target exporter -t pysyncache-exporter .
