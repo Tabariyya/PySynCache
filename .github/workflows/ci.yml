@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [development]
   workflow_dispatch:
+    inputs:
+      force_publish:
+        description: 'Publish to PyPI even if version has not changed'
+        type: boolean
+        default: false
 
 jobs:
   test:
@@ -14,8 +19,7 @@ jobs:
 
     steps:
       - name: Install git-lfs
-        run: |
-          git lfs install
+        run: git lfs install
 
       - uses: actions/checkout@v4
         with:
@@ -40,7 +44,7 @@ jobs:
     name: Check version bump
     runs-on: self-hosted
     needs: test
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     outputs:
       changed: ${{ steps.check.outputs.changed }}
 
@@ -52,7 +56,9 @@ jobs:
       - name: Detect version change
         id: check
         run: |
-          if git diff HEAD~1 HEAD -- pyproject.toml | grep -q '^+version'; then
+          if [ "${{ inputs.force_publish }}" = "true" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          elif git diff HEAD~1 HEAD -- pyproject.toml | grep -q '^+version'; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
@@ -66,8 +72,7 @@ jobs:
 
     steps:
       - name: Install git-lfs
-        run: |
-          git lfs install
+        run: git lfs install
 
       - uses: actions/checkout@v4
         with:
@@ -88,7 +93,7 @@ jobs:
 
       - name: Publish to PyPI
         run: |
-          pip install --quiet twine
-          twine upload dist/* \
+          python3 -m pip install --quiet twine
+          python3 -m twine upload dist/* \
             --username __token__ \
             --password ${{ secrets.PYPI_TOKEN }}
