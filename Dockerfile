@@ -33,6 +33,8 @@ ENV BROKER_TOKEN=${BROKER_TOKEN}
 COPY tests tests
 RUN python -m unittest discover -v tests/
 
-FROM alpine:latest AS exporter
+FROM python:3.13-slim AS publisher
+
 RUN pip install --no-cache-dir twine
+
 COPY --from=builder /app/dist /dist
