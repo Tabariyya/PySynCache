@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 class Controller {
     struct Impl;
@@ -24,7 +25,12 @@ public:
              const std::vector<uint8_t> &value,
              const std::optional<long> &ttl) const;
 
-    std::optional<std::vector<uint8_t> > getRaw(const std::string &nameSpace, const std::string &id) const;
+    void set(const std::string &nameSpace,
+             const std::string &id,
+             std::vector<uint8_t> &&value,
+             const std::optional<long> &ttl) const;
+
+    std::optional<std::shared_ptr<const std::vector<uint8_t>>> getRaw(const std::string &nameSpace, const std::string &id) const;
 
     std::optional<std::string> getAsString(const std::string &nameSpace, const std::string &id) const;
 
