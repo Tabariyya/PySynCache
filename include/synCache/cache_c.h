@@ -6,20 +6,14 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
-/* Opaque handle to the C++ Controller */
-typedef struct controller_handle controller_handle_t;
-
-/* Create / destroy */
-controller_handle_t *controller_create(
+/* Initialize the singleton Cache. Call once before any other cache_* function. */
+void cache_init(
     const char *broker_auth_token,
     long max_no_of_entries
 );
 
-void controller_destroy(controller_handle_t *handle);
-
 /* Set string value */
-void controller_set_string(
-    controller_handle_t *handle,
+void cache_set_string(
     const char *name_space,
     const char *id,
     const char *value,
@@ -27,8 +21,7 @@ void controller_set_string(
 );
 
 /* Set raw binary value */
-void controller_set_raw(
-    controller_handle_t *handle,
+void cache_set_raw(
     const char *name_space,
     const char *id,
     const uint8_t *value,
@@ -38,10 +31,9 @@ void controller_set_raw(
 
 /* Get raw value
  * - buffer is allocated by the function, size written to *out_size
- * - caller must free it with controller_free()
+ * - caller must free it with cache_free()
  */
-uint8_t *controller_get_raw(
-    const controller_handle_t *handle,
+uint8_t *cache_get_raw(
     const char *name_space,
     const char *id,
     size_t *out_size
@@ -49,27 +41,25 @@ uint8_t *controller_get_raw(
 
 /* Get string value
  * - string is null-terminated
- * - caller must free it with controller_free()
+ * - caller must free it with cache_free()
  */
-char *controller_get_string(
-    const controller_handle_t *handle,
+char *cache_get_string(
     const char *name_space,
     const char *id
 );
 
 /* Eviction */
-void controller_evict(
-    controller_handle_t *handle,
+void cache_evict(
     const char *name_space,
     const char *id
 );
 
-void controller_evict_all(controller_handle_t *handle);
+void cache_evict_all(void);
 
-void controller_evict_all_namespace(controller_handle_t *handle, const char *name_space);
+void cache_evict_all_namespace(const char *name_space);
 
 /* Free memory returned by get functions */
-void controller_free(void *ptr);
+void cache_free(void *ptr);
 
 #ifdef __cplusplus
 }

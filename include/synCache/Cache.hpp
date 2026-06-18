@@ -4,16 +4,23 @@
 #include <optional>
 #include <string>
 #include <vector>
-#include <cstdint>
 
-class Controller {
+class Cache {
     struct Impl;
     std::unique_ptr<Impl> impl;
 
-public:
-    explicit Controller(const std::string &brokerAuthToken, long maxNoOfEntries);
+    Cache();
 
-    ~Controller();
+public:
+    ~Cache();
+
+    Cache(const Cache &) = delete;
+
+    Cache &operator=(const Cache &) = delete;
+
+    static void initialize(const std::string &brokerAuthToken, long maxNoOfEntries);
+
+    static Cache &getInstance();
 
     void set(const std::string &nameSpace,
              const std::string &id,
@@ -30,13 +37,13 @@ public:
              std::vector<uint8_t> &&value,
              const std::optional<long> &ttl) const;
 
-    std::optional<std::shared_ptr<const std::vector<uint8_t>>> getRaw(const std::string &nameSpace, const std::string &id) const;
+    std::shared_ptr<const std::vector<uint8_t>> getRaw(const std::string &nameSpace, const std::string &id) const;
 
     std::optional<std::string> getAsString(const std::string &nameSpace, const std::string &id) const;
 
     void evict(const std::string &nameSpace, const std::string &id) const;
 
-    void evictAll() const;
+    void evict() const;
 
-    void evictAll(const std::string &nameSpace) const;
+    void evict(const std::string &nameSpace) const;
 };
